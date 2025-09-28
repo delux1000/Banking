@@ -1,1 +1,27 @@
-{  "name": "adons",  "version": "1.0.0",  "description": "",  "main": "server.js",  "scripts": {    "test": "echo \"Error: no test specified\" && exit 1",    "start": "node server.js"  },  "repository": {    "type": "git",    "url": "git+https://github.com/delux1000/ADONS.git"  },  "keywords": [],  "author": "",  "license": "ISC",  "bugs": {    "url": "https://github.com/delux1000/ADONS/issues"  },  "homepage": "https://github.com/delux1000/ADONS#readme",  "dependencies": {    "body-parser": "^2.2.0",    "express": "^5.1.0",    "express-session": "^1.18.2",    "node-telegram-bot-api": "^0.66.0"  }}
+{
+  "name": "adons",
+  "version": "1.0.0",
+  "description": "ADONS project - Node.js Telegram bot with Express",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/delux1000/ADONS.git"
+  },
+  "keywords": ["nodejs", "telegram", "express"],
+  "author": "Your Name",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/delux1000/ADONS/issues"
+  },
+  "homepage": "https://github.com/delux1000/ADONS#readme",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
