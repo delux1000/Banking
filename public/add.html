@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit Money</title>
+    <style>
+        /* Background with Image */
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmNVaxQcoXP9M2fT2v3Qya9vonWGqYzdyThhiVIxB3ZAccRFSce8eQcx37&s=10') no-repeat center center fixed;
+            background-size: cover;
+            text-align: center;
+            padding: 20px;
+            color: white;
+        }
+
+        /* Glassmorphism Card */
+        .container {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            padding: 25px;
+            width: 90%;
+            max-width: 380px;
+            margin: auto;
+            border-radius: 12px;
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            color: white;
+        }
+
+        /* Input & Buttons */
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.3);
+            color: yellow;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        button {
+            background: limegreen;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: darkgreen;
+        }
+
+        /* Hide Element */
+        .hidden {
+            display: none;
+        }
+
+        /* Loading Animation */
+        .loading {
+            font-size: 18px;
+            font-weight: bold;
+            color: limegreen;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Popup Message */
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container" id="step1">
+        <h2 class="blue-text">Deposit Money</h2>
+        <input type="number" id="depositAmount" placeholder="Enter amount (₦)" oninput="updateAmountDisplay()">
+        <p id="amountDisplay" class="yellow-text" style="font-size: 18px; font-weight: bold;"></p>
+        <button onclick="showAccount()">Next</button>
+    </div>
+
+    <div class="container hidden" id="step2">
+        <h2 class="blue-text">Send the Exact Amount</h2>
+        <p><strong class="blue-text">Bank:</strong> <span class="yellow-text" id="bankName"></span></p>
+        <p><strong class="blue-text">Account Number:</strong> <span class="yellow-text" id="accountNumber"></span></p>
+        <p><strong class="blue-text">Account Name:</strong> <span class="yellow-text" id="accountName"></span></p>
+        <p><strong class="blue-text">Amount to Deposit:</strong> <span id="displayAmount" class="yellow-text" style="font-size: 20px; font-weight: bold;"></span>₦</p>
+        <button onclick="confirmDeposit()">I Have Paid</button>
+    </div>
+
+    <div class="container hidden" id="step3">
+        <h2 class="blue-text">Upload Payment Receipt</h2>
+        <input type="file" id="receiptUpload" accept="image/*">
+        <button onclick="sendToWhatsApp()">Submit</button>
+    </div>
+
+    <div class="popup" id="popup">
+        <p class="loading red-text">Processing deposit...</p>
+    </div>
+
+    <script>
+        let depositAmount = 0;
+        let selectedAccount = {};
+
+        const accounts = [
+            { bank: "OPay", accountNumber: "6109810023", accountName: "Lawrence Kabirat" },
+            { bank: "palmpay", accountNumber: "8989497517", accountName: "UNWOZHI CHINEMEZI" },
+            { bank: "Palmpay", accountNumber: "8905233095", accountName: "fawas adigun" }
+        ];
+
+        function updateAmountDisplay() {
+            depositAmount = document.getElementById("depositAmount").value;
+            document.getElementById("amountDisplay").textContent = depositAmount ? `You are depositing: ₦${depositAmount}` : "";
+        }
+
+        function showAccount() {
+            if (!depositAmount || depositAmount < 100) {
+                alert("Minimum deposit is ₦100.");
+                return;
+            }
+
+            selectedAccount = accounts[Math.floor(Math.random() * accounts.length)];
+
+            document.getElementById("step1").innerHTML = '<p class="loading red-text">Generating your virtual account details to add funds to your delux...</p>';
+            setTimeout(() => {
+                document.getElementById("step1").classList.add("hidden");
+                document.getElementById("step2").classList.remove("hidden");
+                document.getElementById("displayAmount").textContent = depositAmount;
+                document.getElementById("bankName").textContent = selectedAccount.bank;
+                document.getElementById("accountNumber").textContent = selectedAccount.accountNumber;
+                document.getElementById("accountName").textContent = selectedAccount.accountName;
+            }, 5000);
+        }
+
+        function confirmDeposit() {
+            document.getElementById("popup").style.display = "block";
+            setTimeout(() => {
+                document.getElementById("popup").innerHTML = "<p class='yellow-text'>Deposit processing... You will receive a notification soon.</p>";
+                setTimeout(() => {
+                    document.getElementById("popup").style.display = "none";
+                    document.getElementById("step2").classList.add("hidden");
+                    document.getElementById("step3").classList.remove("hidden");
+                }, 3000);
+            }, 5000);
+        }
+
+        function sendToWhatsApp() {
+            let fileInput = document.getElementById("receiptUpload");
+            if (fileInput.files.length === 0) {
+                alert("Please upload your payment receipt.");
+                return;
+            }
+
+            let number = "+12568212395";
+            let message = `Hello, I have made a deposit. Here are my details:\n\n` +
+                          `Amount: ₦${depositAmount}\n` +
+                          `Bank: ${selectedAccount.bank}\n` +
+                          `Account Number: ${selectedAccount.accountNumber}\n` +
+                          `Account Name: ${selectedAccount.accountName}\n\n` +
+                          `Please verify my payment.`;
+
+            let encodedMessage = encodeURIComponent(message);
+            let whatsappURL = `https://wa.me/${number}?text=${encodedMessage}`;
+
+            window.open(whatsappURL, "_blank");
+
+            setTimeout(() => {
+                alert("Now, please attach your receipt manually in the WhatsApp chat.");
+            }, 2000);
+        }
+    </script>
+
+</body>
+</html>

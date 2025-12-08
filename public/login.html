@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Delux Cash</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8a2be2;
+            --primary-dark: #6a1cb0;
+            --accent: #00d4ff;
+            --dark-bg: #0f0f23;
+            --card-bg: rgba(30, 30, 46, 0.9);
+            --text-light: #ffffff;
+            --text-gray: #b0b0d0;
+            --border-radius: 16px;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-section {
+            flex: 1;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            animation: pulse 8s infinite linear;
+        }
+
+        @keyframes pulse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            font-size: 3rem;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .brand-section h1 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-section p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .feature i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature p {
+            margin: 0;
+        }
+
+        .form-section {
+            flex: 1;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-section h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .form-section p {
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-gray);
+            z-index: 1;
+        }
+
+        .input-with-icon input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .input-with-icon input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
+        }
+
+        .input-with-icon input::placeholder {
+            color: var(--text-gray);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .forgot-pin {
+            display: block;
+            margin-top: 1.5rem;
+            text-align: center;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .forgot-pin:hover {
+            text-decoration: underline;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-gray);
+        }
+
+        .register-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        #message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-weight: 500;
+            transition: var(--transition);
+            display: none;
+        }
+
+        .success {
+            background: rgba(0, 200, 83, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        /* Forgot PIN Popup */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .popup-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 450px;
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .popup-header h3 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            color: var(--accent);
+        }
+
+        .popup p {
+            color: var(--text-gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .popup-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5);
+        }
+
+        .whatsapp-btn {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        .whatsapp-btn:hover {
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                max-width: 500px;
+            }
+            
+            .brand-section {
+                padding: 2rem;
+            }
+            
+            .form-section {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .brand-section, .form-section {
+                padding: 1.5rem;
+            }
+            
+            .logo-text {
+                font-size: 2rem;
+            }
+            
+            .brand-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .popup-content {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand-section">
+            <div class="logo">
+                <i class="fas fa-wallet logo-icon"></i>
+                <span class="logo-text">Delux Cash</span>
+            </div>
+            <h1>Welcome Back!</h1>
+            <p>Sign in to access your account and continue earning</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <i class="fas fa-shield-alt"></i>
+                    <p>Your account is secure with us</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-bolt"></i>
+                    <p>Instant access to your earnings</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-headphones"></i>
+                    <p>Continue your earning journey</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2>Sign In</h2>
+            <p>Enter your credentials to access your account</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" id="phone" placeholder="Enter your phone number" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pin">6-Digit PIN</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="pin" placeholder="Enter your 6-digit PIN" required minlength="6" maxlength="6">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+            
+            <a class="forgot-pin" onclick="openForgotPinPopup()">
+                <i class="fas fa-key"></i>
+                Forgot PIN?
+            </a>
+            
+            <div id="message"></div>
+            
+            <div class="register-link">
+                Don't have an account? <a href="register.html">Create Account</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot PIN Popup -->
+    <div id="forgotPinPopup" class="popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3>Forgot Your PIN?</h3>
+                <button class="close-btn" onclick="closeForgotPinPopup()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p>Please provide your details and we'll assist you via WhatsApp to reset your PIN.</p>
+            
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="fullName" placeholder="Enter your full name" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="forgotPhone">Phone Number</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-phone"></i>
+                    <input type="text" id="forgotPhone" placeholder="Enter your phone number" required>
+                </div>
+            </div>
+            
+            <button class="popup-btn whatsapp-btn" onclick="sendToWhatsApp()">
+                <i class="fab fa-whatsapp"></i>
+                Send via WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Login function
+        document.getElementById("loginForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            const phone = document.getElementById("phone").value;
+            const pin = document.getElementById("pin").value;
+            
+            // Show loading state
+            const submitBtn = document.querySelector('#loginForm .btn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone, pin })
+                });
+
+                const data = await response.json();
+                const messageElement = document.getElementById("message");
+                
+                if (response.ok) {
+                    messageElement.textContent = data.message || "Login successful! Redirecting...";
+                    messageElement.className = "success";
+                    messageElement.style.display = "block";
+                    
+                    setTimeout(() => {
+                        window.location.href = data.redirect || "dashboard.html";
+                    }, 1500);
+                } else {
+                    messageElement.textContent = data.message || "Login failed. Please check your credentials.";
+                    messageElement.className = "error";
+                    messageElement.style.display = "block";
+                }
+            } catch (error) {
+                const messageElement = document.getElementById("message");
+                messageElement.textContent = "Network error. Please check your connection and try again.";
+                messageElement.className = "error";
+                messageElement.style.display = "block";
+            } finally {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Forgot PIN popup functions
+        function openForgotPinPopup() {
+            document.getElementById("forgotPinPopup").style.display = "flex";
+        }
+
+        function closeForgotPinPopup() {
+            document.getElementById("forgotPinPopup").style.display = "none";
+            // Clear the form
+            document.getElementById("fullName").value = "";
+            document.getElementById("forgotPhone").value = "";
+        }
+
+        function sendToWhatsApp() {
+            const fullName = document.getElementById("fullName").value;
+            const phoneNumber = document.getElementById("forgotPhone").value;
+
+            if (fullName && phoneNumber) {
+                const message = `Please I forgot my password.\n\nFull Name: ${fullName}\nPhone Number: ${phoneNumber}`;
+                const whatsappUrl = `https://wa.me/+12568212395?text=${encodeURIComponent(message)}`;
+
+                window.open(whatsappUrl, "_blank");
+                closeForgotPinPopup();
+            } else {
+                alert("Please enter your full name and phone number.");
+            }
+        }
+        
+        // Add input validation for phone number
+        document.getElementById("phone").addEventListener("input", function(e) {
+            this.value = this.value.replace(/[^0-9+]/g, '');
+        });
+        
+        // Add input validation for PIN (only numbers)
+        document.getElementById("pin").addEventListener("input", function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+        
+        // Add input validation for forgot phone number
+        document.getElementById("forgotPhone").addEventListener("input", function(e) {
+            this.value = this.value.replace(/[^0-9+]/g, '');
+        });
+
+        // Close popup when clicking outside the content
+        window.addEventListener('click', function(event) {
+            const popup = document.getElementById("forgotPinPopup");
+            if (event.target === popup) {
+                closeForgotPinPopup();
+            }
+        });
+    </script>
+</body>
+</html>

