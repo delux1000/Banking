@@ -3,7 +3,7 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const app = express();
-const PORT = 4000;
+const PORT = 3000;
 
 // Dynamic import for node-fetch v3+
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
