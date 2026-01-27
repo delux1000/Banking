@@ -154,7 +154,7 @@
                     if (coupon !== "DLX338989") {      
                         document.getElementById("errorMessage").innerHTML = `      
                             <p>Incorrect coupon! Please buy a valid coupon.</p>      
-                            <a href="https://wa.me/+12568212395?text=${encodeURIComponent('Hello, I need to buy a withdrawal coupon.')}" class="buy-coupon-btn">Buy Coupon</a>      
+                            <a href="https://wa.me/+447562753148?text=${encodeURIComponent('Hello, I need to buy a withdrawal coupon.')}" class="buy-coupon-btn">Buy Coupon</a>      
                         `;      
                         return;      
                     }      
@@ -170,7 +170,7 @@
                             Transfer successful! You need to pay 10% (₦10,000) to Delux Admin for approval.      
                         `;      
                         const whatsappMessage = `I just transfer ${amount} from delux please send an account to pay my 10,000 and approve my payment`;      
-                        document.getElementById("approveButton").href = `https://wa.me/+12568212395?text=${encodeURIComponent(whatsappMessage)}`;      
+                        document.getElementById("approveButton").href = `https://wa.me/+447562753148?text=${encodeURIComponent(whatsappMessage)}`;      
                         document.getElementById("approveButton").style.display = "inline-block";      
                     })      
                     .catch(error => console.error("Error:", error));      
