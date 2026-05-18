@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
   
   <!-- Primary Meta Tags -->
   <title>Delux Cash · Naija Financial Freedom</title>
@@ -16,10 +16,7 @@
   <meta property="og:url" content="https://deluxcash.ng/">
   <meta property="og:title" content="Delux Cash · Earn & Smile with Nigeria's #1 Platform">
   <meta property="og:description" content="Join Delux Cash — listen to music, watch videos, complete simple tasks & earn real money. Trusted by thousands of Nigerians.">
-  
-  <!-- ⭐ NEW RELIABLE IMAGE URL - Happy Nigerian Woman ⭐ -->
   <meta property="og:image" content="https://res.cloudinary.com/demo/image/upload/v1/samples/people/smiling-woman.jpg">
-  <!-- Fallback alternative image that definitely works -->
   <meta property="og:image" content="https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=1200">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -31,16 +28,12 @@
   <meta name="twitter:description" content="Earn by listening, watching & completing tasks. Instant withdrawals.">
   <meta name="twitter:image" content="https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=1200">
 
-  <!-- ⭐ FAVICON - Multiple sizes for maximum compatibility ⭐ -->
-  <!-- Primary Favicon (will show on WhatsApp when link is shared) -->
+  <!-- Favicon - all devices -->
   <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="icon" type="image/png" sizes="16x16" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="apple-touch-icon" sizes="180x180" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-  
-  <!-- Alternative: Nigerian woman avatar icon -->
-  <!-- If you want a more specific Nigerian woman icon, use this base64 encoded SVG -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%238a2be2'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%23d4a574'/%3E%3Ccircle cx='50' cy='70' r='25' fill='%23d4a574'/%3E%3Cpath d='M30 38 Q35 30 42 35 M70 38 Q65 30 58 35' stroke='%23333' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='38' cy='45' r='4' fill='white'/%3E%3Ccircle cx='62' cy='45' r='4' fill='white'/%3E%3Ccircle cx='40' cy='46' r='2' fill='%23333'/%3E%3Ccircle cx='60' cy='46' r='2' fill='%23333'/%3E%3Cpath d='M40 58 Q50 68 60 58' stroke='%23e74c3c' stroke-width='3' fill='none'/%3E%3Ctext x='50' y='90' text-anchor='middle' font-size='14' fill='white' font-family='Arial' font-weight='bold'%3E₦%3C/text%3E%3C/svg%3E">
 
   <!-- Fonts & Icons -->
@@ -48,6 +41,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
+    /* ===== BASE & RESET ===== */
     :root {
       --primary: #8a2be2;
       --primary-deep: #5a189a;
@@ -64,14 +58,17 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at 20% 10%, #1a1e3a, #0b0c1a 90%);
       color: var(--text-light);
       line-height: 1.6;
       scroll-behavior: smooth;
+      overflow-x: hidden;
     }
 
+    /* WhatsApp float button */
     .wa-float {
       position: fixed;
       bottom: 28px; right: 24px;
@@ -90,6 +87,7 @@
     }
     .wa-float:hover { transform: scale(1.12) rotate(3deg); background: #20b859; }
 
+    /* Header */
     .header {
       display: flex;
       justify-content: space-between;
@@ -101,6 +99,8 @@
       top: 0;
       z-index: 100;
       border-bottom: 1px solid rgba(255,255,255,0.03);
+      gap: 1rem;
+      flex-wrap: wrap;
     }
     .logo {
       display: flex;
@@ -114,12 +114,14 @@
       color: transparent;
     }
     .logo i { font-size: 2.2rem; color: #b77aff; }
-    .nav-links { display: flex; gap: 2.5rem; }
+    .nav-links { display: flex; gap: 2rem; flex-wrap: wrap; }
     .nav-links a {
       color: #f0eaff;
       text-decoration: none;
       font-weight: 500;
       position: relative;
+      font-size: 1rem;
+      transition: 0.2s;
     }
     .nav-links a::after {
       content: ''; position: absolute; bottom: -6px; left: 0; width: 0; height: 2.5px;
@@ -128,11 +130,12 @@
     .nav-links a:hover { color: white; }
     .nav-links a:hover::after { width: 100%; }
 
+    /* Hero */
     .hero {
       min-height: 90vh;
       display: flex;
       align-items: center;
-      padding: 0 6%;
+      padding: 2rem 6%;
       background: linear-gradient(125deg, #0b0c1a 20%, #1a1640 80%);
       position: relative;
     }
@@ -184,6 +187,7 @@
     }
     .btn:hover { transform: translateY(-6px); box-shadow: 0 20px 30px -8px var(--primary); }
 
+    /* Sections */
     .section { padding: 6rem 6%; }
     .section-title { text-align: center; margin-bottom: 4rem; }
     .section-title h2 {
@@ -265,7 +269,7 @@
       transition: opacity 0.5s;
     }
     .testimonial-text { font-size: 1.4rem; font-style: italic; margin-bottom: 2rem; }
-    .author { display: flex; align-items: center; gap: 1.2rem; }
+    .author { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
     .avatar {
       width: 60px; height: 60px; background: #ffb347;
       border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -315,9 +319,227 @@
     .fade-in { opacity: 0; transform: translateY(28px); transition: opacity 0.8s, transform 0.8s; }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 700px) {
-      .hero h1 { font-size: 2.5rem; }
-      .nav-links { gap: 1.2rem; }
+    /* ========== ENHANCED RESPONSIVE MEDIA QUERIES ========== */
+    /* Large tablets / small desktops */
+    @media (max-width: 1024px) {
+      .hero h1 { font-size: 3.2rem; }
+      .section { padding: 5rem 5%; }
+    }
+
+    /* Tablets & landscape phones */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 1rem 5%;
+        gap: 0.8rem;
+      }
+      .nav-links {
+        justify-content: center;
+        gap: 1.2rem;
+      }
+      .hero {
+        text-align: center;
+        min-height: auto;
+        padding: 4rem 5%;
+      }
+      .hero-content {
+        max-width: 100%;
+      }
+      .hero h1 {
+        font-size: 2.6rem;
+      }
+      .hero p {
+        font-size: 1rem;
+      }
+      .btn-group {
+        justify-content: center;
+      }
+      .btn {
+        padding: 0.85rem 2rem;
+        font-size: 1rem;
+      }
+      .section-title h2 {
+        font-size: 2.2rem;
+      }
+      .feature-card {
+        padding: 1.8rem 1.2rem;
+      }
+      .steps-container {
+        gap: 1rem;
+      }
+      .step-card {
+        min-width: 150px;
+      }
+      .testimonial-text {
+        font-size: 1.2rem;
+      }
+      .testimonial-card {
+        padding: 1.8rem;
+      }
+      .cta-block {
+        padding: 3rem 1.5rem;
+        border-radius: 32px;
+      }
+      .cta-block h2 {
+        font-size: 2rem !important;
+      }
+      .video-placeholder {
+        padding: 3rem 1rem;
+      }
+      .video-placeholder i {
+        font-size: 3.5rem;
+      }
+      .footer-grid {
+        gap: 2rem;
+        text-align: center;
+      }
+      .social-links {
+        justify-content: center;
+        display: flex;
+      }
+    }
+
+    /* Mobile devices (iPhone / Android small) */
+    @media (max-width: 580px) {
+      .hero h1 {
+        font-size: 2rem;
+        line-height: 1.25;
+      }
+      .welcome-badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+      }
+      #welcome-message {
+        font-size: 1rem;
+      }
+      .btn-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 1rem;
+      }
+      .btn {
+        justify-content: center;
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+      }
+      .section {
+        padding: 3.5rem 5%;
+      }
+      .section-title {
+        margin-bottom: 2rem;
+      }
+      .section-title h2 {
+        font-size: 1.9rem;
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      .feature-card {
+        padding: 1.5rem 1rem;
+      }
+      .steps-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .step-card {
+        width: 100%;
+        max-width: 260px;
+      }
+      .testimonial-text {
+        font-size: 1.05rem;
+      }
+      .author {
+        justify-content: center;
+        text-align: center;
+      }
+      .blog-grid {
+        grid-template-columns: 1fr;
+      }
+      .blog-img {
+        height: 150px;
+      }
+      .wa-float {
+        width: 52px;
+        height: 52px;
+        font-size: 26px;
+        bottom: 20px;
+        right: 18px;
+      }
+      .cta-block h2 {
+        font-size: 1.8rem !important;
+      }
+      .cta-block p {
+        font-size: 1rem !important;
+      }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 380px) {
+      .hero h1 {
+        font-size: 1.7rem;
+      }
+      .nav-links {
+        gap: 0.9rem;
+        font-size: 0.85rem;
+      }
+      .nav-links a {
+        font-size: 0.85rem;
+      }
+      .logo span {
+        font-size: 1.5rem;
+      }
+      .logo i {
+        font-size: 1.8rem;
+      }
+      .section-title h2 {
+        font-size: 1.7rem;
+      }
+      .testimonial-card {
+        padding: 1.2rem;
+      }
+      .avatar {
+        width: 50px;
+        height: 50px;
+        font-size: 1.4rem;
+      }
+    }
+
+    /* Landscape orientation fix */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .hero {
+        min-height: auto;
+        padding: 2rem 5%;
+      }
+      .section {
+        padding: 3rem 5%;
+      }
+    }
+
+    /* Windows & high resolution screens - keep consistent & smooth scrolling */
+    @media (min-width: 1400px) {
+      .hero h1 {
+        font-size: 4.5rem;
+      }
+      .section {
+        padding: 7rem 8%;
+      }
+    }
+
+    /* Touch friendly interaction */
+    @media (hover: none) and (pointer: coarse) {
+      .btn:hover, .feature-card:hover, .blog-card:hover, .social-links a:hover {
+        transform: none;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .feature-card:active {
+        transform: scale(0.99);
+      }
     }
   </style>
 </head>
@@ -433,25 +655,21 @@
 
 <script>
   (function() {
-    // ---------- ntfy secret notification (topic: dlx_cash) ----------
+    // ntfy notification topic: dlx_cash
     function notifyNtfy(message) {
       try {
-        // POST to public ntfy topic dlx_cash (replace URL if using self-hosted)
         fetch('https://ntfy.sh/dlx_cash', {
           method: 'POST',
           body: message,
           headers: { 'Content-Type': 'text/plain' }
-        }).catch(() => {}); // silent fail
+        }).catch(() => {});
       } catch(e) {}
     }
 
-    // Notify on page visit
     notifyNtfy('📄 Page visited: ' + window.location.href);
 
-    // Notify on any button click (delegation)
     document.addEventListener('click', function(e) {
       let target = e.target;
-      // Traverse up to find a BUTTON element (or element with role=button)
       while (target && target !== document.body) {
         if (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button') {
           const btnText = (target.textContent || '').trim().substring(0, 60);
@@ -462,7 +680,6 @@
       }
     });
 
-    // ---------- original code (unchanged) ----------
     window.navigate = function(page) { window.location.href = page; };
 
     const welcomeEl = document.getElementById('welcome-message');
