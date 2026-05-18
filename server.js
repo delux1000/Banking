@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const crypto = require("crypto"); // for admin tokens
 const app = express();
 const PORT = 3000;
 
@@ -26,18 +27,41 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(cors());
 
+// ------------------------------------------------------------------
+// In-memory admin session store (server restart clears all sessions)
+// ------------------------------------------------------------------
+const adminTokens = new Map(); // token -> expiry timestamp
+
+const ADMIN_PIN = "338989";
+const ADMIN_SESSION_DURATION = 3600000; // 1 hour
+
+function generateAdminToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function isAdminAuthenticated(req) {
+  const token = req.cookies?.admin_token;
+  if (!token) return false;
+  const expiry = adminTokens.get(token);
+  if (!expiry || Date.now() > expiry) {
+    adminTokens.delete(token);
+    return false;
+  }
+  return true;
+}
+
+// ------------------------------------------------------------------
 // Helper functions for JSONBin
+// ------------------------------------------------------------------
 async function readJSONBin(url) {
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: headers
     });
-    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
     const data = await response.json();
     return data.record || [];
   } catch (error) {
@@ -53,11 +77,9 @@ async function writeJSONBin(url, data) {
       headers: headers,
       body: JSON.stringify(data)
     });
-    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
     return await response.json();
   } catch (error) {
     console.error('Error writing to JSONBin:', error.message);
@@ -75,20 +97,37 @@ const writeUsers = async (data) => {
   return await writeJSONBin(USERS_URL, data);
 };
 
-// Initialize JSONBin if empty
+// Initialize JSONBin if empty, also ensure all users have an 'active' field
 async function initializeJSONBin() {
   try {
-    const users = await readUsers();
+    let users = await readUsers();
     if (users.length === 0) {
       await writeUsers([]);
       console.log('✅ Initialized users.json bin');
     } else {
+      // Add 'active' field if missing (default true)
+      let needsUpdate = false;
+      users = users.map(user => {
+        if (user.active === undefined) {
+          user.active = true;
+          needsUpdate = true;
+        }
+        return user;
+      });
+      if (needsUpdate) {
+        await writeUsers(users);
+        console.log('✅ Added active field to existing users');
+      }
       console.log(`✅ Users bin has ${users.length} users`);
     }
   } catch (error) {
     console.error('❌ Error initializing JSONBin:', error.message);
   }
 }
+
+// ------------------------------------------------------------------
+// EXISTING USER ROUTES (unchanged logic, now respects active status)
+// ------------------------------------------------------------------
 
 // **USER REGISTRATION**
 app.post("/register", async (req, res) => {
@@ -110,6 +149,7 @@ app.post("/register", async (req, res) => {
       phone,
       pin,
       balance: 90000, // Registration bonus
+      active: true,
       transactions: []
     };
 
@@ -148,6 +188,11 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid phone or PIN" });
     }
 
+    // Check if account is active
+    if (user.active === false) {
+      return res.status(403).json({ message: "Account is deactivated. Contact admin." });
+    }
+
     res.cookie("phone", phone, { httpOnly: true, maxAge: 3600000 });
     res.json({ 
       message: "Login successful", 
@@ -177,6 +222,10 @@ app.get("/dashboard", async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
+    if (user.active === false) {
+      res.clearCookie("phone");
+      return res.status(403).json({ message: "Account deactivated" });
+    }
 
     res.json({ 
       fullName: user.fullName, 
@@ -203,6 +252,10 @@ app.get("/balance", async (req, res) => {
     
     if (!user) {
       return res.status(400).json({ message: "User not found" });
+    }
+    if (user.active === false) {
+      res.clearCookie("phone");
+      return res.status(403).json({ message: "Account deactivated" });
     }
 
     res.json({ 
@@ -234,6 +287,10 @@ app.post("/transfer", async (req, res) => {
     
     if (!sender) {
       return res.status(400).json({ message: "User not found" });
+    }
+    if (sender.active === false) {
+      res.clearCookie("phone");
+      return res.status(403).json({ message: "Account deactivated" });
     }
 
     const transferAmount = parseFloat(amount);
@@ -300,6 +357,10 @@ app.get("/history", async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
+    if (user.active === false) {
+      res.clearCookie("phone");
+      return res.status(403).json({ message: "Account deactivated" });
+    }
 
     res.json({
       transactions: user.transactions,
@@ -335,7 +396,7 @@ app.get("/check-session", async (req, res) => {
     let users = await readUsers();
     let user = users.find(user => user.phone === phone);
     
-    if (!user) {
+    if (!user || user.active === false) {
       res.clearCookie("phone");
       return res.json({ loggedIn: false });
     }
@@ -354,7 +415,218 @@ app.get("/check-session", async (req, res) => {
   }
 });
 
-// **TEST ENDPOINT**
+// ------------------------------------------------------------------
+// ADMIN ROUTES
+// ------------------------------------------------------------------
+
+// Admin login
+app.post("/admin/login", (req, res) => {
+  const { pin } = req.body;
+  if (pin !== ADMIN_PIN) {
+    return res.status(401).json({ message: "Invalid admin access PIN" });
+  }
+  // Generate token and store
+  const token = generateAdminToken();
+  adminTokens.set(token, Date.now() + ADMIN_SESSION_DURATION);
+  res.cookie("admin_token", token, {
+    httpOnly: true,
+    maxAge: ADMIN_SESSION_DURATION,
+    sameSite: "strict"
+  });
+  res.json({ message: "Admin authenticated", success: true });
+});
+
+// Admin logout
+app.post("/admin/logout", (req, res) => {
+  const token = req.cookies?.admin_token;
+  if (token) adminTokens.delete(token);
+  res.clearCookie("admin_token");
+  res.json({ message: "Logged out" });
+});
+
+// Middleware to protect admin routes
+function requireAdmin(req, res, next) {
+  if (!isAdminAuthenticated(req)) {
+    return res.status(403).json({ message: "Admin access required. Please login at /admin.html" });
+  }
+  next();
+}
+
+// Get all users (admin only)
+app.get("/admin/users", requireAdmin, async (req, res) => {
+  try {
+    let users = await readUsers();
+    // Return users without PIN (security)
+    const safeUsers = users.map(({ pin, ...rest }) => rest);
+    res.json({ users: safeUsers });
+  } catch (error) {
+    console.error('Admin get users error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get single user details (admin)
+app.get("/admin/user/:phone", requireAdmin, async (req, res) => {
+  try {
+    const phone = req.params.phone;
+    let users = await readUsers();
+    const user = users.find(u => u.phone === phone);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Return user without PIN
+    const { pin, ...safeUser } = user;
+    res.json({ user: safeUser });
+  } catch (error) {
+    console.error('Admin get user error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Credit a user (admin)
+app.post("/admin/user/credit", requireAdmin, async (req, res) => {
+  try {
+    const { phone, amount } = req.body;
+    if (!phone || amount === undefined) {
+      return res.status(400).json({ message: "Phone and amount are required" });
+    }
+    const creditAmount = parseFloat(amount);
+    if (isNaN(creditAmount) || creditAmount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    let users = await readUsers();
+    const userIndex = users.findIndex(u => u.phone === phone);
+    if (userIndex === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    users[userIndex].balance += creditAmount;
+    // Record transaction as admin credit
+    users[userIndex].transactions.push({
+      type: "credit",
+      amount: creditAmount,
+      receiver: "Admin Credit",
+      bank: "System",
+      account: "N/A",
+      date: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
+      balanceAfter: users[userIndex].balance
+    });
+
+    await writeUsers(users);
+    res.json({ message: `Credited ₦${creditAmount.toLocaleString()} to ${users[userIndex].fullName}`, newBalance: users[userIndex].balance });
+  } catch (error) {
+    console.error('Admin credit error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Debit a user (admin)
+app.post("/admin/user/debit", requireAdmin, async (req, res) => {
+  try {
+    const { phone, amount } = req.body;
+    if (!phone || amount === undefined) {
+      return res.status(400).json({ message: "Phone and amount are required" });
+    }
+    const debitAmount = parseFloat(amount);
+    if (isNaN(debitAmount) || debitAmount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    let users = await readUsers();
+    const userIndex = users.findIndex(u => u.phone === phone);
+    if (userIndex === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (users[userIndex].balance < debitAmount) {
+      return res.status(400).json({ message: "Insufficient balance" });
+    }
+
+    users[userIndex].balance -= debitAmount;
+    // Record transaction
+    users[userIndex].transactions.push({
+      type: "debit",
+      amount: debitAmount,
+      receiver: "Admin Debit",
+      bank: "System",
+      account: "N/A",
+      date: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
+      balanceAfter: users[userIndex].balance
+    });
+
+    await writeUsers(users);
+    res.json({ message: `Debited ₦${debitAmount.toLocaleString()} from ${users[userIndex].fullName}`, newBalance: users[userIndex].balance });
+  } catch (error) {
+    console.error('Admin debit error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Activate user
+app.post("/admin/user/activate", requireAdmin, async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: "Phone required" });
+
+    let users = await readUsers();
+    const userIndex = users.findIndex(u => u.phone === phone);
+    if (userIndex === -1) return res.status(404).json({ message: "User not found" });
+
+    users[userIndex].active = true;
+    await writeUsers(users);
+    res.json({ message: `User ${users[userIndex].fullName} activated` });
+  } catch (error) {
+    console.error('Admin activate error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Deactivate user
+app.post("/admin/user/deactivate", requireAdmin, async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: "Phone required" });
+
+    let users = await readUsers();
+    const userIndex = users.findIndex(u => u.phone === phone);
+    if (userIndex === -1) return res.status(404).json({ message: "User not found" });
+
+    users[userIndex].active = false;
+    await writeUsers(users);
+    res.json({ message: `User ${users[userIndex].fullName} deactivated` });
+  } catch (error) {
+    console.error('Admin deactivate error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Change user password (PIN)
+app.post("/admin/user/changepin", requireAdmin, async (req, res) => {
+  try {
+    const { phone, newPin } = req.body;
+    if (!phone || !newPin) return res.status(400).json({ message: "Phone and newPin required" });
+    if (typeof newPin !== 'string' || newPin.trim().length === 0) {
+      return res.status(400).json({ message: "Invalid PIN" });
+    }
+
+    let users = await readUsers();
+    const userIndex = users.findIndex(u => u.phone === phone);
+    if (userIndex === -1) return res.status(404).json({ message: "User not found" });
+
+    users[userIndex].pin = newPin;
+    await writeUsers(users);
+    res.json({ message: `PIN changed for ${users[userIndex].fullName}` });
+  } catch (error) {
+    console.error('Admin changepin error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ------------------------------------------------------------------
+// TEST ENDPOINT (updated)
 app.get("/test", (req, res) => {
   res.json({ 
     status: "OK", 
@@ -368,21 +640,32 @@ app.get("/test", (req, res) => {
       "POST /transfer",
       "GET /history",
       "POST /logout",
-      "GET /check-session"
+      "GET /check-session",
+      "--- Admin ---",
+      "POST /admin/login",
+      "POST /admin/logout",
+      "GET /admin/users",
+      "GET /admin/user/:phone",
+      "POST /admin/user/credit",
+      "POST /admin/user/debit",
+      "POST /admin/user/activate",
+      "POST /admin/user/deactivate",
+      "POST /admin/user/changepin"
     ]
   });
 });
 
-// **START SERVER**
+// ------------------------------------------------------------------
+// START SERVER
 app.listen(PORT, async () => {
   console.log(`\n========================================`);
   console.log(`Banking Server`);
   console.log(`========================================`);
   console.log(`Server URL: http://localhost:${PORT}`);
+  console.log(`Admin Panel: http://localhost:${PORT}/admin.html`);
   console.log(`========================================\n`);
   
-  // Initialize JSONBin on startup
   await initializeJSONBin();
   console.log('✅ Server is ready and connected to JSONBin');
-  console.log('✅ Test the server at: http://localhost:4000/test');
+  console.log('✅ Test the server at: http://localhost:3000/test');
 });
