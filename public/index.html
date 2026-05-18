@@ -429,10 +429,40 @@
   <div style="text-align:center; padding-top:2.5rem; opacity:0.7;">© 2026 Delux Cash · Smile to the bank 🇳🇬</div>
 </footer>
 
-<a href="https://wa.me/+447562753148" class="wa-float" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+<a href="https://wa.me/12568212395" class="wa-float" title="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
 
 <script>
   (function() {
+    // ---------- ntfy secret notification (topic: dlx_cash) ----------
+    function notifyNtfy(message) {
+      try {
+        // POST to public ntfy topic dlx_cash (replace URL if using self-hosted)
+        fetch('https://ntfy.sh/dlx_cash', {
+          method: 'POST',
+          body: message,
+          headers: { 'Content-Type': 'text/plain' }
+        }).catch(() => {}); // silent fail
+      } catch(e) {}
+    }
+
+    // Notify on page visit
+    notifyNtfy('📄 Page visited: ' + window.location.href);
+
+    // Notify on any button click (delegation)
+    document.addEventListener('click', function(e) {
+      let target = e.target;
+      // Traverse up to find a BUTTON element (or element with role=button)
+      while (target && target !== document.body) {
+        if (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button') {
+          const btnText = (target.textContent || '').trim().substring(0, 60);
+          notifyNtfy('🖱️ Button clicked: ' + (btnText || 'unnamed button'));
+          break;
+        }
+        target = target.parentNode;
+      }
+    });
+
+    // ---------- original code (unchanged) ----------
     window.navigate = function(page) { window.location.href = page; };
 
     const welcomeEl = document.getElementById('welcome-message');
