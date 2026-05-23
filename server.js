@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const crypto = require("crypto"); // for admin tokens
+const crypto = require("crypto");
 const app = express();
 const PORT = 3000;
 
@@ -11,9 +11,8 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 
 // JSONBin Configuration
 const JSONBIN_API_KEY = '$2a$10$nCBLclxfTfVHOJVQH1rRSOq.M/Ds19fpLw1sEX7k9IREVmxidVeBS';
-const USERS_BIN_ID = '69373ad3d0ea881f401b8107'; // Replace with your users bin ID
+const USERS_BIN_ID = '69373ad3d0ea881f401b8107';
 
-// JSONBin API URL
 const USERS_URL = `https://api.jsonbin.io/v3/b/${USERS_BIN_ID}`;
 
 const headers = {
@@ -27,13 +26,10 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(cors());
 
-// ------------------------------------------------------------------
-// In-memory admin session store (server restart clears all sessions)
-// ------------------------------------------------------------------
-const adminTokens = new Map(); // token -> expiry timestamp
-
+// Admin session store
+const adminTokens = new Map();
 const ADMIN_PIN = "338989";
-const ADMIN_SESSION_DURATION = 3600000; // 1 hour
+const ADMIN_SESSION_DURATION = 3600000;
 
 function generateAdminToken() {
   return crypto.randomBytes(32).toString('hex');
@@ -50,9 +46,29 @@ function isAdminAuthenticated(req) {
   return true;
 }
 
-// ------------------------------------------------------------------
-// Helper functions for JSONBin
-// ------------------------------------------------------------------
+// ========== REFERRAL HELPER FUNCTIONS ==========
+function generateReferralCode(phone, fullName) {
+  // Generate a unique 6-character alphanumeric code
+  const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const namePart = fullName.replace(/\s/g, '').slice(0, 2).toUpperCase();
+  return `${namePart}${randomPart}`.slice(0, 6);
+}
+
+async function isReferralCodeUnique(code, users) {
+  return !users.some(user => user.referralCode === code);
+}
+
+async function getUniqueReferralCode(phone, fullName, users) {
+  let code = generateReferralCode(phone, fullName);
+  let attempts = 0;
+  while (!(await isReferralCodeUnique(code, users)) && attempts < 5) {
+    code = generateReferralCode(phone, fullName + attempts);
+    attempts++;
+  }
+  return code;
+}
+
+// ========== JSONBin Helpers ==========
 async function readJSONBin(url) {
   try {
     const response = await fetch(url, {
@@ -87,36 +103,60 @@ async function writeJSONBin(url, data) {
   }
 }
 
-// Read user data from JSONBin
-const readUsers = async () => {
-  return await readJSONBin(USERS_URL);
-};
+const readUsers = async () => await readJSONBin(USERS_URL);
+const writeUsers = async (data) => await writeJSONBin(USERS_URL, data);
 
-// Write user data to JSONBin
-const writeUsers = async (data) => {
-  return await writeJSONBin(USERS_URL, data);
-};
-
-// Initialize JSONBin if empty, also ensure all users have an 'active' field
+// ========== MIGRATION: Add referral fields to existing users ==========
 async function initializeJSONBin() {
   try {
     let users = await readUsers();
+    let needsUpdate = false;
+
     if (users.length === 0) {
       await writeUsers([]);
       console.log('✅ Initialized users.json bin');
     } else {
-      // Add 'active' field if missing (default true)
-      let needsUpdate = false;
+      // Add missing fields for all users
       users = users.map(user => {
+        let modified = false;
+        
         if (user.active === undefined) {
           user.active = true;
-          needsUpdate = true;
+          modified = true;
         }
+        
+        if (!user.referralCode) {
+          // Generate unique referral code for existing user
+          user.referralCode = generateReferralCode(user.phone, user.fullName);
+          // Ensure uniqueness (simple check)
+          while (users.some(u => u !== user && u.referralCode === user.referralCode)) {
+            user.referralCode = generateReferralCode(user.phone, user.fullName + Math.random());
+          }
+          modified = true;
+        }
+        
+        if (user.referredBy === undefined) {
+          user.referredBy = null;
+          modified = true;
+        }
+        
+        if (user.referralCount === undefined) {
+          user.referralCount = 0;
+          modified = true;
+        }
+        
+        if (user.referredUsers === undefined) {
+          user.referredUsers = [];
+          modified = true;
+        }
+        
+        if (modified) needsUpdate = true;
         return user;
       });
+      
       if (needsUpdate) {
         await writeUsers(users);
-        console.log('✅ Added active field to existing users');
+        console.log('✅ Added referral fields to existing users');
       }
       console.log(`✅ Users bin has ${users.length} users`);
     }
@@ -125,14 +165,12 @@ async function initializeJSONBin() {
   }
 }
 
-// ------------------------------------------------------------------
-// EXISTING USER ROUTES (unchanged logic, now respects active status)
-// ------------------------------------------------------------------
+// ========== USER ROUTES ==========
 
-// **USER REGISTRATION**
+// **REGISTRATION with Referral Support**
 app.post("/register", async (req, res) => {
   try {
-    const { fullName, phone, pin } = req.body;
+    const { fullName, phone, pin, referralCode } = req.body;
     
     if (!fullName || !phone || !pin) {
       return res.status(400).json({ message: "All fields are required" });
@@ -140,30 +178,106 @@ app.post("/register", async (req, res) => {
     
     let users = await readUsers();
     
+    // Check if phone already registered
     if (users.some(user => user.phone === phone)) {
       return res.status(400).json({ message: "Phone number already registered" });
     }
 
+    // Validate referral code if provided
+    let referrer = null;
+    let referralBonus = 0;
+    
+    if (referralCode && referralCode.trim() !== "") {
+      referrer = users.find(user => user.referralCode === referralCode);
+      if (!referrer) {
+        return res.status(400).json({ message: "Invalid referral code" });
+      }
+      // Prevent self-referral
+      if (referrer.phone === phone) {
+        return res.status(400).json({ message: "You cannot refer yourself" });
+      }
+      referralBonus = 500; // New user gets ₦500 bonus
+    }
+
+    // Create new user
     const newUser = {
       fullName,
       phone,
       pin,
-      balance: 90000, // Registration bonus
+      balance: 90000 + referralBonus, // Base bonus + referral bonus
       active: true,
-      transactions: []
+      transactions: [],
+      referralCode: await getUniqueReferralCode(phone, fullName, users),
+      referredBy: referrer ? referrer.phone : null,
+      referralCount: 0,
+      referredUsers: []
     };
 
+    // Add transaction for referral bonus (if any)
+    if (referrer) {
+      newUser.transactions.push({
+        type: "credit",
+        amount: 500,
+        receiver: "Referral Bonus",
+        bank: "System",
+        account: "Referral",
+        description: `Bonus from referring user ${referrer.fullName}`,
+        date: new Date().toLocaleString(),
+        timestamp: new Date().toISOString(),
+        balanceAfter: newUser.balance
+      });
+    }
+
+    // Add registration bonus transaction
+    newUser.transactions.push({
+      type: "credit",
+      amount: 90000,
+      receiver: "Registration Bonus",
+      bank: "System",
+      account: "Welcome",
+      description: "Welcome bonus for joining",
+      date: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
+      balanceAfter: newUser.balance
+    });
+
+    // Update referrer if exists
+    if (referrer) {
+      const referrerIndex = users.findIndex(u => u.phone === referrer.phone);
+      if (referrerIndex !== -1) {
+        // Add ₦1000 to referrer balance
+        users[referrerIndex].balance += 1000;
+        users[referrerIndex].referralCount += 1;
+        users[referrerIndex].referredUsers.push(phone);
+        
+        // Record transaction for referrer
+        users[referrerIndex].transactions.push({
+          type: "credit",
+          amount: 1000,
+          receiver: "Referral Reward",
+          bank: "System",
+          account: "Referral",
+          description: `Bonus for referring ${fullName}`,
+          date: new Date().toLocaleString(),
+          timestamp: new Date().toISOString(),
+          balanceAfter: users[referrerIndex].balance
+        });
+      }
+    }
+
+    // Add new user to array
     users.push(newUser);
     await writeUsers(users);
 
     res.cookie("phone", phone, { httpOnly: true, maxAge: 3600000 });
     res.json({ 
-      message: "Registration successful!", 
+      message: `Registration successful!${referrer ? ' Referral bonus applied!' : ''}`,
       redirect: "/dashboard.html",
       user: {
         fullName,
         phone,
-        balance: 90000
+        balance: newUser.balance,
+        referralCode: newUser.referralCode
       }
     });
   } catch (error) {
@@ -172,7 +286,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// **USER LOGIN**
+// **USER LOGIN** (unchanged except added active check)
 app.post("/login", async (req, res) => {
   try {
     const { phone, pin } = req.body;
@@ -188,7 +302,6 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid phone or PIN" });
     }
 
-    // Check if account is active
     if (user.active === false) {
       return res.status(403).json({ message: "Account is deactivated. Contact admin." });
     }
@@ -199,7 +312,8 @@ app.post("/login", async (req, res) => {
       redirect: "/dashboard.html",
       user: {
         fullName: user.fullName,
-        balance: user.balance
+        balance: user.balance,
+        referralCode: user.referralCode
       }
     });
   } catch (error) {
@@ -208,7 +322,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// **DASHBOARD DATA**
+// **DASHBOARD DATA** (includes referral info)
 app.get("/dashboard", async (req, res) => {
   try {
     const phone = req.cookies.phone;
@@ -227,11 +341,18 @@ app.get("/dashboard", async (req, res) => {
       return res.status(403).json({ message: "Account deactivated" });
     }
 
+    // Generate referral link (frontend will use this)
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const referralLink = `${baseUrl}/register.html?ref=${user.referralCode}`;
+
     res.json({ 
       fullName: user.fullName, 
       balance: user.balance,
       phone: user.phone,
-      transactionCount: user.transactions.length
+      transactionCount: user.transactions.length,
+      referralCode: user.referralCode,
+      referralLink: referralLink,
+      referralCount: user.referralCount || 0
     });
   } catch (error) {
     console.error('Dashboard error:', error);
@@ -239,7 +360,7 @@ app.get("/dashboard", async (req, res) => {
   }
 });
 
-// **GET USER BALANCE**
+// **GET USER BALANCE** (unchanged)
 app.get("/balance", async (req, res) => {
   try {
     const phone = req.cookies.phone;
@@ -268,7 +389,7 @@ app.get("/balance", async (req, res) => {
   }
 });
 
-// **TRANSFER MONEY**
+// **TRANSFER MONEY** (unchanged)
 app.post("/transfer", async (req, res) => {
   try {
     const phone = req.cookies.phone;
@@ -343,7 +464,7 @@ app.post("/transfer", async (req, res) => {
   }
 });
 
-// **TRANSACTION HISTORY**
+// **TRANSACTION HISTORY** (unchanged)
 app.get("/history", async (req, res) => {
   try {
     const phone = req.cookies.phone;
@@ -376,7 +497,7 @@ app.get("/history", async (req, res) => {
   }
 });
 
-// **LOGOUT**
+// **LOGOUT** (unchanged)
 app.post("/logout", (req, res) => {
   res.clearCookie("phone");
   res.json({ 
@@ -385,7 +506,7 @@ app.post("/logout", (req, res) => {
   });
 });
 
-// **CHECK SESSION**
+// **CHECK SESSION** (unchanged)
 app.get("/check-session", async (req, res) => {
   try {
     const phone = req.cookies.phone;
@@ -406,7 +527,8 @@ app.get("/check-session", async (req, res) => {
       user: {
         fullName: user.fullName,
         phone: user.phone,
-        balance: user.balance
+        balance: user.balance,
+        referralCode: user.referralCode
       }
     });
   } catch (error) {
@@ -415,17 +537,12 @@ app.get("/check-session", async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// ADMIN ROUTES
-// ------------------------------------------------------------------
-
-// Admin login
+// ========== ADMIN ROUTES ==========
 app.post("/admin/login", (req, res) => {
   const { pin } = req.body;
   if (pin !== ADMIN_PIN) {
     return res.status(401).json({ message: "Invalid admin access PIN" });
   }
-  // Generate token and store
   const token = generateAdminToken();
   adminTokens.set(token, Date.now() + ADMIN_SESSION_DURATION);
   res.cookie("admin_token", token, {
@@ -436,7 +553,6 @@ app.post("/admin/login", (req, res) => {
   res.json({ message: "Admin authenticated", success: true });
 });
 
-// Admin logout
 app.post("/admin/logout", (req, res) => {
   const token = req.cookies?.admin_token;
   if (token) adminTokens.delete(token);
@@ -444,7 +560,6 @@ app.post("/admin/logout", (req, res) => {
   res.json({ message: "Logged out" });
 });
 
-// Middleware to protect admin routes
 function requireAdmin(req, res, next) {
   if (!isAdminAuthenticated(req)) {
     return res.status(403).json({ message: "Admin access required. Please login at /admin.html" });
@@ -452,11 +567,9 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Get all users (admin only)
 app.get("/admin/users", requireAdmin, async (req, res) => {
   try {
     let users = await readUsers();
-    // Return users without PIN (security)
     const safeUsers = users.map(({ pin, ...rest }) => rest);
     res.json({ users: safeUsers });
   } catch (error) {
@@ -465,7 +578,6 @@ app.get("/admin/users", requireAdmin, async (req, res) => {
   }
 });
 
-// Get single user details (admin)
 app.get("/admin/user/:phone", requireAdmin, async (req, res) => {
   try {
     const phone = req.params.phone;
@@ -474,7 +586,6 @@ app.get("/admin/user/:phone", requireAdmin, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // Return user without PIN
     const { pin, ...safeUser } = user;
     res.json({ user: safeUser });
   } catch (error) {
@@ -483,7 +594,6 @@ app.get("/admin/user/:phone", requireAdmin, async (req, res) => {
   }
 });
 
-// Credit a user (admin)
 app.post("/admin/user/credit", requireAdmin, async (req, res) => {
   try {
     const { phone, amount } = req.body;
@@ -502,7 +612,6 @@ app.post("/admin/user/credit", requireAdmin, async (req, res) => {
     }
 
     users[userIndex].balance += creditAmount;
-    // Record transaction as admin credit
     users[userIndex].transactions.push({
       type: "credit",
       amount: creditAmount,
@@ -522,7 +631,6 @@ app.post("/admin/user/credit", requireAdmin, async (req, res) => {
   }
 });
 
-// Debit a user (admin)
 app.post("/admin/user/debit", requireAdmin, async (req, res) => {
   try {
     const { phone, amount } = req.body;
@@ -545,7 +653,6 @@ app.post("/admin/user/debit", requireAdmin, async (req, res) => {
     }
 
     users[userIndex].balance -= debitAmount;
-    // Record transaction
     users[userIndex].transactions.push({
       type: "debit",
       amount: debitAmount,
@@ -565,7 +672,6 @@ app.post("/admin/user/debit", requireAdmin, async (req, res) => {
   }
 });
 
-// Activate user
 app.post("/admin/user/activate", requireAdmin, async (req, res) => {
   try {
     const { phone } = req.body;
@@ -584,7 +690,6 @@ app.post("/admin/user/activate", requireAdmin, async (req, res) => {
   }
 });
 
-// Deactivate user
 app.post("/admin/user/deactivate", requireAdmin, async (req, res) => {
   try {
     const { phone } = req.body;
@@ -603,7 +708,6 @@ app.post("/admin/user/deactivate", requireAdmin, async (req, res) => {
   }
 });
 
-// Change user password (PIN)
 app.post("/admin/user/changepin", requireAdmin, async (req, res) => {
   try {
     const { phone, newPin } = req.body;
@@ -625,41 +729,23 @@ app.post("/admin/user/changepin", requireAdmin, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------
-// TEST ENDPOINT (updated)
+// ========== TEST ENDPOINT ==========
 app.get("/test", (req, res) => {
   res.json({ 
     status: "OK", 
-    message: "Banking API is running",
+    message: "Banking API with Referral System is running",
     timestamp: new Date().toISOString(),
-    endpoints: [
-      "POST /register",
-      "POST /login", 
-      "GET /dashboard",
-      "GET /balance",
-      "POST /transfer",
-      "GET /history",
-      "POST /logout",
-      "GET /check-session",
-      "--- Admin ---",
-      "POST /admin/login",
-      "POST /admin/logout",
-      "GET /admin/users",
-      "GET /admin/user/:phone",
-      "POST /admin/user/credit",
-      "POST /admin/user/debit",
-      "POST /admin/user/activate",
-      "POST /admin/user/deactivate",
-      "POST /admin/user/changepin"
-    ]
+    referralBonus: {
+      referrer: 1000,
+      newUser: 500
+    }
   });
 });
 
-// ------------------------------------------------------------------
-// START SERVER
+// ========== START SERVER ==========
 app.listen(PORT, async () => {
   console.log(`\n========================================`);
-  console.log(`Banking Server`);
+  console.log(`Banking Server with Referral System`);
   console.log(`========================================`);
   console.log(`Server URL: http://localhost:${PORT}`);
   console.log(`Admin Panel: http://localhost:${PORT}/admin.html`);
@@ -667,5 +753,6 @@ app.listen(PORT, async () => {
   
   await initializeJSONBin();
   console.log('✅ Server is ready and connected to JSONBin');
+  console.log('✅ Referral bonus: Referrer gets ₦1,000, New user gets ₦500');
   console.log('✅ Test the server at: http://localhost:3000/test');
 });
