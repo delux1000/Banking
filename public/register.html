@@ -40,7 +40,7 @@
         .container {
             display: flex;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             background: var(--card-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
@@ -210,6 +210,17 @@
             color: var(--text-gray);
         }
 
+        .referral-note {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: var(--accent);
+        }
+
         .btn {
             width: 100%;
             padding: 1rem;
@@ -337,7 +348,7 @@
                 </div>
                 <div class="feature">
                     <i class="fas fa-user-friends"></i>
-                    <p>Referral Bonuses</p>
+                    <p>Referral Bonuses – You & Friend Get ₦500 & ₦1000</p>
                 </div>
             </div>
         </div>
@@ -370,6 +381,18 @@
                         <input type="password" id="pin" placeholder="Create a 6-digit PIN" required minlength="6" maxlength="6">
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="referralCode">Referral Code <span style="color:var(--text-gray); font-weight:normal;">(Optional)</span></label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-gift"></i>
+                        <input type="text" id="referralCode" placeholder="Enter referral code if you have one">
+                    </div>
+                </div>
+
+                <div id="referralNote" class="referral-note" style="display:none;">
+                    <i class="fas fa-star"></i> Referral code applied! You'll get ₦500 extra on signup, and your referrer gets ₦1000.
+                </div>
                 
                 <button type="submit" class="btn">
                     <i class="fas fa-user-plus"></i>
@@ -386,12 +409,37 @@
     </div>
 
     <script>
+        // Get referral code from URL parameter 'ref'
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        
+        // Auto-fill referral code if present
+        const referralInput = document.getElementById('referralCode');
+        const referralNote = document.getElementById('referralNote');
+        
+        if (refCode && refCode.trim() !== "") {
+            referralInput.value = refCode;
+            referralNote.style.display = 'block';
+            referralNote.innerHTML = `<i class="fas fa-star"></i> Referral code <strong>${refCode}</strong> applied! You will receive an extra ₦500 on signup, and your referrer gets ₦1000.`;
+        }
+        
+        // Also show note when user manually types a code
+        referralInput.addEventListener('input', function() {
+            if (this.value.trim() !== "") {
+                referralNote.style.display = 'block';
+                referralNote.innerHTML = `<i class="fas fa-star"></i> Using referral code <strong>${this.value}</strong> will give you ₦500 extra on signup and reward your referrer with ₦1000.`;
+            } else {
+                referralNote.style.display = 'none';
+            }
+        });
+
         document.getElementById("registerForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             
             const fullName = document.getElementById("fullName").value;
             const phone = document.getElementById("phone").value;
             const pin = document.getElementById("pin").value;
+            const referralCode = document.getElementById("referralCode").value.trim() || null;
             
             // Show loading state
             const submitBtn = document.querySelector('.btn');
@@ -403,7 +451,7 @@
                 const response = await fetch("/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fullName, phone, pin })
+                    body: JSON.stringify({ fullName, phone, pin, referralCode })
                 });
                 
                 const data = await response.json();
@@ -434,14 +482,13 @@
             }
         });
         
-        // Add input validation for phone number
+        // Input validations
         document.getElementById("phone").addEventListener("input", function(e) {
             this.value = this.value.replace(/[^0-9+]/g, '');
         });
         
-        // Add input validation for PIN (only numbers)
         document.getElementById("pin").addEventListener("input", function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
         });
     </script>
 </body>
